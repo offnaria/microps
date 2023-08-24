@@ -29,7 +29,7 @@ intr_request_irq(unsigned int irq, int (*handler)(unsigned int irq, void *dev), 
 {
     struct irq_entry *entry;
 
-    debugf("\x1b[33mirq=%u, flags=%d, name=%s\x1b[0m", irq, flags, name);
+    debugf("irq=%u, flags=%d, name=%s", irq, flags, name);
     for (entry = irqs; entry; entry = entry->next) {
         if (entry->irq == irq) {
             if (entry->flags ^ INTR_IRQ_SHARED || flags ^ INTR_IRQ_SHARED) {
@@ -51,7 +51,7 @@ intr_request_irq(unsigned int irq, int (*handler)(unsigned int irq, void *dev), 
     entry->next = irqs;
     irqs = entry;
     sigaddset(&sigmask, irq);
-    debugf("\x1b[33mregistered: irq=%u, name=%s\x1b[0m", irq, name);
+    debugf("registered: irq=%u, name=%s", irq, name);
     return 0;
 }
 
@@ -67,7 +67,7 @@ intr_thread(void *arg)
     int terminate = 0, sig, err;
     struct irq_entry *entry;
 
-    debugf("\x1b[33mstart...\x1b[0m");
+    debugf("start...");
     pthread_barrier_wait(&barrier);
     while (!terminate) {
         err = sigwait(&sigmask, &sig);
@@ -82,14 +82,14 @@ intr_thread(void *arg)
         default:
             for (entry = irqs; entry; entry = entry->next) {
                 if (entry->irq == (unsigned int)sig) {
-                    debugf("\x1b[33mirq=%d, name=%s\x1b[0m", entry->irq, entry->name);
+                    debugf("irq=%d, name=%s", entry->irq, entry->name);
                     entry->handler(entry->irq, entry->dev);
                 }
             }
             break;
         }
     }
-    debugf("\x1b[33mterminated\x1b[0m");
+    debugf("terminated");
     return NULL;
 }
 

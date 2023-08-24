@@ -24,7 +24,7 @@ dummy_transmit(struct net_device *dev, uint16_t type, const uint8_t *data, size_
 static int
 dummy_isr(unsigned int irq, void *id)
 {
-    debugf("\x1b[33mirq=%u, dev=%s\x1b[0m", irq, ((struct net_device *)id)->name);
+    debugf("irq=%u, dev=%s", irq, ((struct net_device *)id)->name);
     return 0;
 }
 
