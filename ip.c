@@ -85,6 +85,7 @@ ip_dump(const uint8_t *data, size_t len)
     fprintf(stderr, "        tos: 0x%02x\n", hdr->tos);
     total = ntoh16(hdr->total);
     fprintf(stderr, "      total: %u (payload: %u)\n", total, total - hlen);
+    fprintf(stderr, "         id: %u\n", ntoh16(hdr->id));
     offset = ntoh16(hdr->offset);
     fprintf(stderr, "     offset: 0x%04x [flags=%x, offset=%u]\n", offset, (offset & 0xe000) >> 13, offset & 0x1fff);
     fprintf(stderr, "        ttl: %u\n", hdr->ttl);
