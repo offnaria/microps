@@ -160,7 +160,6 @@ ip_input(const uint8_t *data, size_t len, struct net_device *dev)
     uint16_t hlen, total, offset;
     struct ip_iface *iface;
     char addr[IP_ADDR_STR_LEN];
-    struct net_iface *entry;
 
     if (len < IP_HDR_SIZE_MIN) {
         errorf("too short");
@@ -192,13 +191,9 @@ ip_input(const uint8_t *data, size_t len, struct net_device *dev)
         return;
     }
 
-    for (entry = dev->ifaces; entry; entry = entry->next) {
-        if (entry->family == NET_IFACE_FAMILY_IP) {
-            iface = (struct ip_iface *)entry;
-        } else if (entry->next == NULL) {
-            errorf("ip iface not found");
-            return;
-        }
+    iface = (struct ip_iface *)net_device_get_iface(dev, NET_IFACE_FAMILY_IP);
+    if (!iface) {
+        return;
     }
     if ((hdr->dst != iface->unicast) && (hdr->dst != IP_ADDR_BROADCAST) && (hdr->dst != iface->broadcast)) {
         return;
