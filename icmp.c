@@ -101,7 +101,7 @@ icmp_input(const uint8_t *data, size_t len, ip_addr_t src, ip_addr_t dst, struct
     switch (hdr->type) {
     case ICMP_TYPE_ECHO:
         /* Responds with the address of the received interface. */
-        icmp_output(ICMP_TYPE_ECHOREPLY, hdr->code, hdr->values, data + ICMP_HDR_SIZE, len - ICMP_HDR_SIZE, dst, src);
+        icmp_output(ICMP_TYPE_ECHOREPLY, hdr->code, hdr->values, data + ICMP_HDR_SIZE, len - ICMP_HDR_SIZE, iface->unicast, src);
         break;
     default:
         /* ignore */
