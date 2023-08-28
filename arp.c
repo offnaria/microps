@@ -20,6 +20,7 @@
 #define ARP_OP_REPLY   2
 
 #define ARP_CACHE_SIZE 32
+#define ARP_CACHE_TIMEOUT 30 /* seconds */
 
 #define ARP_CACHE_STATE_FREE       0
 #define ARP_CACHE_STATE_INCOMPLETE 1
@@ -99,7 +100,7 @@ arp_dump(const uint8_t *data, size_t len)
 static void
 arp_cache_delete(struct arp_cache *cache)
 {
-    char addr1[IP_ADDR_LEN];
+    char addr1[IP_ADDR_STR_LEN];
     char addr2[ETHER_ADDR_STR_LEN];
 
     debugf("DELETE: pa=%s, ha=%s", ip_addr_ntop(cache->pa, addr1, sizeof(addr1)), ether_addr_ntop(cache->ha, addr2, sizeof(addr2)));
@@ -232,7 +233,6 @@ arp_input(const uint8_t *data, size_t len, struct net_device *dev)
     struct arp_ether_ip *msg;
     ip_addr_t spa, tpa;
     struct net_iface *iface;
-    debugf("dev=%s, len=%zu", dev->name, len);
     int merge = 0;
 
     if (len < sizeof(*msg)) {
@@ -309,15 +309,39 @@ arp_resolve(struct net_iface *iface, ip_addr_t pa, uint8_t *ha)
     }
     memcpy(ha, cache->ha, ETHER_ADDR_LEN);
     mutex_unlock(&mutex);
-    debugf("resolved, pad=%s, ha=%s", ip_addr_ntop(pa, addr1, sizeof(addr1)), ether_addr_ntop(ha, addr2, sizeof(addr2)));
+    debugf("resolved, pa=%s, ha=%s", ip_addr_ntop(pa, addr1, sizeof(addr1)), ether_addr_ntop(ha, addr2, sizeof(addr2)));
     return ARP_RESOLVE_FOUND;
+}
+
+static void
+arp_timer_handler(void)
+{
+    struct arp_cache *entry;
+    struct timeval now, diff;
+
+    mutex_lock(&mutex);
+    gettimeofday(&now, NULL);
+    for (entry = caches; entry < tailof(caches); entry++) {
+        if (entry->state != ARP_CACHE_STATE_FREE && entry->state != ARP_CACHE_STATE_STATIC) {
+            timersub(&now, &entry->timestamp, &diff);
+            if (ARP_CACHE_TIMEOUT < diff.tv_sec) {
+                arp_cache_delete(entry);
+            }
+        }
+    }
+    mutex_unlock(&mutex);
 }
 
 int
 arp_init(void)
 {
+    struct timeval interval = {1, 0}; /* 1s */
     if (net_protocol_register(NET_PROTOCOL_TYPE_ARP, arp_input) == -1) {
         errorf("net_protocol_register() failure");
+        return -1;
+    }
+    if (net_timer_register(interval, arp_timer_handler) == -1) {
+        errorf("net_timer_register() failure");
         return -1;
     }
     return 0;
